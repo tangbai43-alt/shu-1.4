@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>可视化气候经济综合模型</title>
+    <script src="https://cdn.plot.ly/plotly-2.18.2.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.97);
+            border-radius: 18px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+            border: 1px solid #e0e6ed;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: linear-gradient(90deg, #2ecc71, #3498db, #9b59b6, #e74c3c);
+        }
+        
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #3498db;
+            position: relative;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            font-size: 2.3rem;
+            font-weight: 700;
+        }
+        
+        h1 small {
+            display: block;
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            margin-top: 8px;
+            font-weight: 400;
+        }
+        
+        .year-indicator {
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .control-panel {
+            padding: 20px;
+            background: linear-gradient(to bottom, #ffffff, #f8f9fa);
+            border-radius: 15px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .control-panel:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+        
+        .control-panel::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #2ecc71, #3498db);
+        }
+        
+        .control-panel label {
+            display: block;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            margin: 12px 0;
+            height: 12px;
+            border-radius: 10px;
+            background: #e0e7ff;
+            outline: none;
+            -webkit-appearance: none;
+            accent-color: #2ecc71;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #2ecc71;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(46, 204, 113, 0.5);
+            border: 3px solid white;
+        }
+        
+        select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            background: white;
+            font-size: 1rem;
+            margin-top: 8px;
+        }
+        
+        .highlight {
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 1.2rem;
+            display: inline-block;
+            min-width: 65px;
+        }
+        
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 25px;
+            margin: 20px 0;
+        }
+        
+        /* 固定图表容器大小 */
+        .chart-container {
+            height: 400px;
+            padding: 20px;
+            background: #fcfdfd;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e6eef2;
+            position: relative;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .chart-container:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chart-title {
+            font-size: 1.3rem;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            position: absolute;
+            top: 15px;
+            left: 25px;
+            z-index: 10;
+            background: rgba(252, 253, 253, 0.8);
+            padding: 8px 15px;
+            border-radius: 6px;
+        }
+        
+        .chart-title::before {
+            content: "";
+            display: inline-block;
+            width: 8px;
+            height: 26px;
+            background: #3498db;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        
+        .hover-info {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid #3498db;
+            border-radius: 12px;
+            padding: 12px 18px;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            min-width: 200px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .hover-info h4 {
+            margin: 0 0 8px 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 6px;
+            font-size: 1rem;
+        }
+        
+        .hover-info p {
+            margin: 6px 0;
+            line-height: 1.4;
+        }
+        
+        .hover-value {
+            font-weight: bold;
+            color: #e74c3c;
+            float: right;
+        }
+        
+        /* 可持续发展目标区域 */
+        .sdg-section {
+            padding: 30px;
+            background: linear-gradient(to right, #f8f9fa, #e3f2fd);
+            border-radius: 15px;
+            margin: 30px 0;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+        
+        .sdg-section h3 {
+            color: #3498db;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.8rem;
+            text-align: center;
+            position: relative;
+            padding-bottom: 12px;
+        }
+        
+        .sdg-section h3::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            border-radius: 2px;
+        }
+        
+        .sdg-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .sdg-box {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            text-align: center;
+            border-top: 5px solid #3498db;
+        }
+        
+        .sdg-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+        
+        .sdg-box img {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            margin: 0 auto 15px;
+            display: block;
+        }
+        
+        .sdg-box h4 {
+            color: #2c3e50;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+        
+        .sdg-box p {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        /* 公式说明部分样式调整 */
+        .formula-section {
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            margin: 30px 0 15px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+        
+        .formula-section h3 {
+            color: #3498db;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.6rem;
+            text-align: center;
+            position: relative;
+            padding-bottom: 12px;
+        }
+        
+        .formula-section h3::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            border-radius: 2px;
+        }
+        
+        .formula-columns {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            column-gap: 35px;
+            row-gap: 25px;
+        }
+        
+        .formula-box {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid #3498db;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .formula-box:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        .formula-box h4 {
+            color: #2c3e50;
+            font-size: 1.3rem;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .formula-box h4 i {
+            font-size: 1.5rem;
+            margin-right: 10px;
+            color: #3498db;
+        }
+        
+        .formula-equation {
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 18px;
+            background: #f1f8ff;
+            border-radius: 10px;
+            margin: 12px 0;
+            font-family: "Cambria Math", serif;
+            border: 1px dashed #3498db;
+        }
+        
+        .parameter-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        
+        .parameter-list li {
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            transition: all 0.2s ease;
+        }
+        
+        .parameter-list li:hover {
+            background: #bbdefb;
+            transform: translateX(4px);
+        }
+        
+        .parameter-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .parameter-value {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .parameter-source {
+            font-style: italic;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            display: block;
+            margin-top: 4px;
+        }
+        
+        .parameter-source a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .parameter-source a:hover {
+            text-decoration: underline;
+        }
+        
+        .footer-note {
+            text-align: center;
+            color: #7f8c8d;
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            font-size: 0.9rem;
+        }
+        
+        /* 添加文献引用样式 */
+        .citation {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        /* 新增输入框样式 */
+        .input-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        
+        .number-input {
+            width: 80px;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+        
+        .number-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        .input-label {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+        
+        /* 加载状态和错误提示 */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            font-size: 1.2rem;
+            color: #7f8c8d;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            padding: 20px;
+            background: #ffeaea;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        @media (max-width: 1200px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(4, 400px);
+            }
+            
+            .formula-columns {
+                grid-template-columns: 1fr;
+            }
+            
+            .sdg-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header-section {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .year-indicator {
+                margin-top: 15px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .chart-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(4, 400px);
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            .sdg-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .input-container {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .number-input {
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .sdg-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-section">
+            <div>
+                <h1>可视化气候经济综合模型
+                    <small>1960-2100 科学模拟 | 支持联合国可持续发展目标</small>
+                </h1>
+            </div>
+            <div class="year-indicator">
+                当前年份: <span id="currentYearDisplay">1960</span>
+            </div>
+        </div>
+        
+        <!-- 控制面板 -->
+        <div class="control-grid">
+            <div class="control-panel">
+                <label>基础排放量 (Gt/yr):
+                    <span id="baseEmissionVal" class="highlight">9.4</span>
+                    <input type="range" id="baseEmission" min="5" max="20" value="9.4" step="0.1">
+                </label>
+                <div class="input-container">
+                    <input type="number" id="baseEmissionInput" class="number-input" min="5" max="20" value="9.4" step="0.1">
+                    <span class="input-label">直接输入数值</span>
+                </div>
+                <div style="font-size: 0.95rem; color: #7f8c8d; margin-top: 8px;">参考值: 美国13.0吨/人</div>
+            </div>
+            <div class="control-panel">
+                <label>减排力度 (%/年):
+                    <span id="reductionVal" class="highlight">2</span>
+                    <input type="range" id="reduction" min="0" max="5" value="2" step="0.1">
+                </label>
+                <div class="input-container">
+                    <input type="number" id="reductionInput" class="number-input" min="0" max="5" value="2" step="0.1">
+                    <span class="input-label">直接输入数值</span>
+                </div>
+                <div style="font-size: 0.95rem; color: #7f8c8d; margin-top: 8px;">0% = 无减排措施</div>
+            </div>
+            <div class="control-panel">
+                <label>当前年份:
+                    <span id="currentYearVal" class="highlight">1960</span>
+                    <input type="range" id="currentYear" min="1960" max="2100" value="1960">
+                </label>
+                <div class="input-container">
+                    <input type="number" id="currentYearInput" class="number-input" min="1960" max="2100" value="1960">
+                    <span class="input-label">直接输入年份</span>
+                </div>
+                <div style="font-size: 0.95rem; color: #7f8c8d; margin-top: 8px;">拖动查看不同年份数据</div>
+            </div>
+            <div class="control-panel">
+                <label>国家类型:
+                    <select id="countryType" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 1rem;">
+                        <option value="developed">发达国家</option>
+                        <option value="developing">发展中国家</option>
+                    </select>
+                </label>
+                <div style="font-size: 0.95rem; color: #7f8c8d; margin-top: 8px;">不同国家模型参数不同</div>
+            </div>
+        </div>
+
+        <!-- 图表区域 -->
+        <div class="chart-grid">
+            <div class="chart-container" id="emissionChart">
+                <div class="chart-title">CO₂排放趋势 (Gt/yr)</div>
+                <div class="loading" id="emissionLoading">图表加载中...</div>
+                <div class="hover-info" id="emissionHover"></div>
+            </div>
+            <div class="chart-container" id="concentrationChart">
+                <div class="chart-title">大气CO₂浓度 (ppm)</div>
+                <div class="loading" id="concentrationLoading">图表加载中...</div>
+                <div class="hover-info" id="concentrationHover"></div>
+            </div>
+            <div class="chart-container" id="temperatureChart">
+                <div class="chart-title">全球平均温升 (℃)</div>
+                <div class="loading" id="temperatureLoading">图表加载中...</div>
+                <div class="hover-info" id="temperatureHover"></div>
+            </div>
+            <div class="chart-container" id="economyChart">
+                <div class="chart-title">人均GDP变化 (美元)</div>
+                <div class="loading" id="economyLoading">图表加载中...</div>
+                <div class="hover-info" id="economyHover"></div>
+            </div>
+        </div>        
+        
+        <!-- 公式说明 -->
+        <div class="formula-section">
+            <h3>核心模型说明与参数来源</h3>
+            <div class="formula-columns">
+                <div class="formula-box">
+                    <h4><i>📈</i>排放模型</h4>
+                    <div class="formula-equation">
+                        E(t) = E₀ × (1 - r/100)<sup>t</sup> × (1 + g)<sup>t</sup>
+                    </div>
+                    <div class="citation">Nordhaus 2017, PNAS</div>
+                    <ul class="parameter-list">
+                        <li>
+                            <span class="parameter-name">E₀</span>: 基础排放量 (Gt/yr)
+                            <span class="parameter-source">用户设定参数，参考值来自<a href="https://www.globalcarbonproject.org/" target="_blank">全球碳计划</a></span>
+                        </li>
+                        <li>
+                            <span class="parameter-name">r</span>: 年减排率 (%)
+                            <span class="parameter-source">用户设定参数，参考<a href="https://unfccc.int/process-and-meetings/the-paris-agreement/the-paris-agreement" target="_blank">巴黎协定</a>目标</span>
+                        </li>
+                        <li>
+                            <span class="parameter-name">g</span>: 经济自然增长率 (1%)
+                            <span class="parameter-source">基于<a href="https://data.worldbank.org" target="_blank">世界银行</a>历史数据</span>
+                        </li>
+                        <li>
+                            <span class="parameter-name">t</span>: 时间 (年)
+                            <span class="parameter-source">模拟时间跨度1960-2100年</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="formula-box">
+                    <h4><i>🌍</i>浓度模型</h4>
+                    <div class="formula-equation">
+                        C(t) = C(t-1) + E(t) × 0.44/2.12 - 0.005 × (C(t-1) - 280)
+                    </div>
+                    <div class="citation">IPCC AR6 WG1, 2021</div>
+                    <ul class="parameter-list">
+                        <li>
+                            <span class="parameter-name">0.44</span>: 碳留存率
+                            <span class="parameter-source">来自<a href="https://www.ipcc.ch/report/ar6/wg1/" target="_blank">IPCC AR6</a>报告</span>
+                        </li>
+                        <li>
+                            <span class="parameter-name">2.12</span>: GtC到ppm转换系数
+                            <span class="parameter-source">基于大气总碳量计算</span>
+                        </li>
+                        <li>
+                            <span class="parameter-name">0.005</span>: 自然衰减率
+                            <span class="parameter-source">基于碳循环模型</span>
+                        </li>
+                        <li>
+                            <span class="parameter-name">280</span>: 工业革命前CO₂浓度 (ppm)
+                            <span class="parameter-source"><a href="https://www.ncei.noaa.gov/products/paleoclimatology/ice-core" target="_blank">NOAA冰芯数据</a></span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="formula-box">
+                    <h4><i>🔥</i>温升模型</h4>
+                    <div class="formula-equation">
+                        ΔT = (Am × AT × ΔFs(CO₂)) / (4 × Kb × Ts³)
+                    </div>
+                    <div class="citation">Cai et al. 2025, NSR</div>
+                    <ul class="parameter-list">
+                        <li>
+                            <span class="parameter-name">Am</span>: 非温度反馈系数 (6.6)
+                        </li>
+                        <li>
+                            <span class="parameter-name">AT</span>: 温度反馈系数 (2.2)
+                        </li>
+                        <li>
+                            <span class="parameter-name">ΔFs(CO₂)</span>: CO₂浓度变化引起的辐射强迫
+                            <span class="parameter-source">由辐射强迫模型计算得出</span>
+                        </li>
+                        <li>
+                            <span class="parameter-name">Kb</span>: 玻尔兹曼常数 (5.670367e-8 W/m²/K⁴)
+                            <span class="parameter-source">物理学基本常数</span>
+                        </li>
+                        <li>
+                            <span class="parameter-name">Ts</span>: 地表基准温度 (288.15K)
+                            <span class="parameter-source"><a href="https://climate.nasa.gov/vital-signs/global-temperature/" target="_blank">NASA气候数据</a></span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="formula-box">
+                    <h4><i>💼</i>经济模型</h4>
+                    <div class="formula-equation">
+                        GDP(t) = GDP₀ × [1 - αΔT - βE(t)<sup>1.5</sup>]
+                    </div>
+                    <div class="citation">Nordhaus 2017, PNAS</div>
+                    <ul class="parameter-list">
+                        <li>
+                            <span class="parameter-name">GDP₀</span>: 初始人均GDP
+                            <span class="parameter-source">发达国家: $18,000 | 发展中国家: $800 (<a href="https://data.worldbank.org" target="_blank">世界银行</a>)</span>
+                        </li>
+                        <li>
+                            <span class="parameter-name">α</span>: 温升影响系数 (发达:0.021 | 发展:0.036)
+                            <span class="parameter-source"><a href="https://nordhaus.yale.edu/dice-model" target="_blank">DICE模型</a>校准参数</span>
+                        </li>
+                        <li>
+                            <span class="parameter-name">β</span>: 排放影响系数 (发达:0.0008 | 发展:0.0025)
+                            <span class="parameter-source"><a href="https://nordhaus.yale.edu/dice-model" target="_blank">DICE模型</a>校准参数</span>
+                        </li>
+                        <li>
+                            <span class="parameter-name">ΔT</span>: 全球温升 (℃)
+                            <span class="parameter-source">来自温升模型输出</span>
+                        </li>
+                        <li>
+                            <span class="parameter-name">E(t)</span>: 当前排放量 (Gt/yr)
+                            <span class="parameter-source">来自排放模型输出</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-note">
+            <p>气候经济综合模拟系统 v2.2 | 支持联合国可持续发展目标 | 基于科学文献的科普模型 </p>
+            <p>注意：本模型为简化模拟，实际气候系统更为复杂。结果仅供参考和科普使用。</p>
+        </div>
+    </div>
+
+<script>
+// 检查Plotly是否加载成功
+if (typeof Plotly === 'undefined') {
+    document.querySelectorAll('.loading').forEach(el => {
+        el.innerHTML = '<div class="error-message">错误: Plotly图表库加载失败，请检查网络连接</div>';
+    });
+}
+
+// 辐射强迫数据（801个值，对应0-800ppm浓度变化）
+const forcingData = [
+    0.000000000000000000, // 0 ppm变化
+    0.004254886414855719, 0.008499289862811565, 0.01271579787135124, 0.01693120412528515, 0.02112998627126217,
+    0.02534418180584908, 0.02951076254248619, 0.03366575390100479, 0.037813451141119, 0.04194707050919533,
+    0.0460711270570755, 0.0501839816570282, 0.05428701639175415, 0.05837531760334969, 0.06244532763957977,
+    0.06651551276445389, 0.07056402415037155, 0.0746060386300087, 0.07863591611385345, 0.08266478031873703,
+    0.08666979521512985, 0.09068613499403, 0.09469549357891083, 0.09881450980901718, 0.1027743443846703,
+    0.1067359074950218, 0.1106703504920006, 0.1145982593297958, 0.1185198500752449, 0.1224455162882805,
+    0.1263438612222672, 0.1302281767129898, 0.1341042667627335, 0.1379647701978683, 0.1418208032846451,
+    0.1456635594367981, 0.1494986265897751, 0.1533304899930954, 0.1571452021598816, 0.1609409749507904,
+    0.1647820472717285, 0.1685601323843002, 0.1723310053348541, 0.1761125028133392, 0.1798636019229889,
+    0.1836036145687103, 0.187347412109375, 0.1910654604434967, 0.1947691589593887, 0.1984728574752808,
+    0.2021667212247849, 0.2058592438697815, 0.209527462720871, 0.2131845951080322, 0.2168625891208649,
+    0.2204902768135071, 0.2241183668375015, 0.2277448624372482, 0.2313620299100876, 0.2349733114242554,
+    0.2385702431201935, 0.2421588450670242, 0.2457369863986969, 0.2493316978216171, 0.2529133856296539,
+    0.2564589381217957, 0.260002464056015, 0.2635426223278046, 0.2670674622058868, 0.2705870270729065,
+    0.2741129994392395, 0.2776466012001038, 0.2811551690101624, 0.2846325039863586, 0.2881049513816833,
+    0.2915725409984589, 0.2950241565704346, 0.2984772920608521, 0.3019296824932098, 0.3053676187992096,
+    0.3087970316410065, 0.3122057616710663, 0.3156109154224396, 0.3190184831619263, 0.3224059641361237,
+    0.3257916569709778, 0.3291655480861664, 0.3325336575508118, 0.3359022736549377, 0.3392576277256012,
+    0.3425960540771484, 0.345937043428421, 0.3492612242698669, 0.3525879681110382, 0.3559074103832245,
+    0.3592154085636139, 0.3625055253505707, 0.3657999038696289, 0.3690805435180664, 0.3723615109920502,
+    0.3756286203861237, 0.3788966834545135, 0.3821573257446289, 0.3854096531867981, 0.3886472880840302,
+    0.3918772339820862, 0.3951053023338318, 0.398404985666275, 0.4015372395515442, 0.4047401547431946,
+    0.4079436957836151, 0.4111275970935822, 0.4143101572990417, 0.4174891710281372, 0.4206519722938538,
+    0.423809826374054, 0.426965206861496, 0.4300996363162994, 0.4332470297813416, 0.4363756775856018,
+    0.4395062327384949, 0.4426243901252747, 0.4457430839538574, 0.4488482475280762, 0.4519462585449219,
+    0.4550392031669617, 0.4581119120121002, 0.4612011015415192, 0.4642739295959473, 0.4673399031162262,
+    0.470394104719162, 0.4734584093093872, 0.4765130877494812, 0.4795480668544769, 0.4825834929943085,
+    0.4856105744838715, 0.4886462092399597, 0.4917071163654327, 0.4947156012058258, 0.4977212846279144,
+    0.5008167028427124, 0.5038073658943176, 0.5067999958992004, 0.5097782015800476, 0.5127545595169067,
+    0.5157296657562256, 0.5187463760375977, 0.5216995477676392, 0.5246509313583374, 0.5275945067405701,
+    0.5305388569831848, 0.5334743857383728, 0.5364009141921997, 0.5393218994140625, 0.5422357320785522,
+    0.5451427102088928, 0.5480458736419678, 0.5509449243545532, 0.5538314580917358, 0.5567227602005005,
+    0.5596013069152832, 0.562476396560669, 0.5653466582298279, 0.5682097673416138, 0.5710659027099609,
+    0.573917806148529, 0.5767682790756226, 0.5796175003051758, 0.5824547410011292, 0.585283100605011,
+    0.5881136059761047, 0.5909330248832703, 0.5937502980232239, 0.596561849117279, 0.5993665456771851,
+    0.602175235748291, 0.6049671769142151, 0.6077560782432556, 0.610543966293335, 0.6133226156234741,
+    0.6160971522331238, 0.618872344493866, 0.6216357350349426, 0.6243925094604492, 0.6271597743034363,
+    0.6299107670783997, 0.6326552033424377, 0.6353994607925415, 0.6381409168243408, 0.6408671736717224,
+    0.6435896158218384, 0.6463119387626648, 0.649029552936554, 0.651739776134491, 0.6544536352157593,
+    0.6571528315544128, 0.6598437428474426, 0.6625436544418335, 0.6652528047561646, 0.6679192185401917,
+    0.6705968976020813, 0.6732682585716248, 0.6759376525878906, 0.6785967946052551, 0.6812611818313599,
+    0.6839151382446289, 0.6865692734718323, 0.6892142295837402, 0.6918537020683289, 0.6945009231567383,
+    0.6971370577812195, 0.6997657418251038, 0.702388346195221, 0.7050116062164307, 0.7076285481452942,
+    0.7102370858192444, 0.7128481864929199, 0.7154561281204224, 0.7183200120925903, 0.7209081053733826,
+    0.7235053181648254, 0.7260869145393372, 0.7286769151687622, 0.7312531471252441, 0.7338256239891052,
+    0.7364180088043213, 0.7389892935752869, 0.7415522933006287, 0.744118332862854, 0.7466779947280884,
+    0.7492369413375854, 0.7517690658569336, 0.7543134093284607, 0.7569150924682617, 0.7594488859176636,
+    0.7619790434837341, 0.7645830512046814, 0.767112135887146, 0.7696208953857422, 0.7721436619758606,
+    0.77464759349823, 0.7771546244621277, 0.7796522974967957, 0.7821502685546875, 0.7846465110778809,
+    0.7871439456939697, 0.7896320223808289, 0.792110800743103, 0.7945878505706787, 0.7970585823059082,
+    0.7995285391807556, 0.8019964098930359, 0.8044551014900208, 0.8069154024124146, 0.8095876574516296,
+    0.8120409250259399, 0.8144888281822205, 0.8169368505477905, 0.8193725943565369, 0.8218107223510742,
+    0.8242447972297668, 0.8266962766647339, 0.8291221261024475, 0.8315431475639343, 0.8339586853981018,
+    0.8363702297210693, 0.838793158531189, 0.8412017226219177, 0.8436049818992615, 0.8460054397583008,
+    0.8484020829200745, 0.8507946133613586, 0.8531854152679443, 0.8555680513381958, 0.8579518795013428,
+    0.8603296279907227, 0.8627079129219055, 0.8650792837142944, 0.8674538135528564, 0.8698166012763977,
+    0.8721835613250732, 0.8745330572128296, 0.8769068121910095, 0.8792752623558044, 0.8816248178482056,
+    0.8840077519416809, 0.8863238096237183, 0.8886707425117493, 0.8909978866577148, 0.8933396339416504,
+    0.8956670761108398, 0.897991418838501, 0.9003166556358337, 0.9026410579681396, 0.9049557447433472,
+    0.9072654247283936, 0.9095936417579651, 0.9119053483009338, 0.914211094379425, 0.9165115356445312,
+    0.9188082814216614, 0.9211031794548035, 0.923393964767456, 0.925683319568634, 0.92796790599823,
+    0.9302544593811035, 0.9325410723686218, 0.9348147511482239, 0.9370918869972229, 0.939416766166687,
+    0.9416704773902893, 0.9439396858215332, 0.9461941719055176, 0.9484590888023376, 0.9507157802581787,
+    0.9529711008071899, 0.9552158713340759, 0.9574638605117798, 0.9597135782241821, 0.9619540572166443,
+    0.9645050764083862, 0.9667394757270813, 0.9689697623252869, 0.9712017774581909, 0.9734295010566711,
+    0.9756539463996887, 0.9779676198959351, 0.9801835417747498, 0.9823973774909973, 0.9846115112304688,
+    0.9868198037147522, 0.9890270829200745, 0.9912419319152832, 0.9934441447257996, 0.9956462979316711,
+    0.9978431463241577, 1.000038504600525, 1.002229332923889, 1.004420518875122, 1.006603598594666,
+    1.008790969848633, 1.010964155197144, 1.013144373893738, 1.015320301055908, 1.01749312877655,
+    1.019663691520691, 1.021845459938049, 1.024008989334106, 1.026193737983704, 1.028329968452454,
+    1.030483484268188, 1.032634854316711, 1.034784197807312, 1.036911249160767, 1.039081215858459,
+    1.041227579116821, 1.043363094329834, 1.045498728752136, 1.047632932662964, 1.049764156341553,
+    1.052085876464844, 1.054215788841248, 1.056349873542786, 1.058474063873291, 1.060592412948608,
+    1.062713742256165, 1.064832091331482, 1.066897988319397, 1.069054841995239, 1.071162462234497,
+    1.073256373405457, 1.075376510620117, 1.07747745513916, 1.079574465751648, 1.081680774688721,
+    1.083776593208313, 1.085866451263428, 1.087952971458435, 1.090037941932678, 1.092121362686157,
+    1.094200968742371, 1.096286058425903, 1.098374128341675, 1.100456237792969, 1.102538585662842,
+    1.104625821113586, 1.106696486473083, 1.108764410018921, 1.11082911491394, 1.112903356552124,
+    1.114952564239502, 1.117020726203918, 1.119075894355774, 1.121127128601074, 1.123176336288452,
+    1.125225186347961, 1.127273559570312, 1.129307746887207, 1.131354451179504, 1.133393049240112,
+    1.135438203811646, 1.137471556663513, 1.13950502872467, 1.141531348228455, 1.143560886383057,
+    1.145586133003235, 1.147613048553467, 1.149630784988403, 1.151654839515686, 1.153713464736938,
+    1.155726194381714, 1.157745480537415, 1.159756422042847, 1.161763429641724, 1.163771033287048,
+    1.165776014328003, 1.167786359786987, 1.169896721839905, 1.171895146369934, 1.173897504806519,
+    1.175897598266602, 1.177880644798279, 1.179869532585144, 1.181855201721191, 1.183843970298767,
+    1.185839056968689, 1.187818169593811, 1.189795732498169, 1.191773533821106, 1.19374692440033,
+    1.195719838142395, 1.197696566581726, 1.199666380882263, 1.201632380485535, 1.203596353530884,
+    1.205562710762024, 1.207532048225403, 1.209488391876221, 1.211472511291504, 1.213489770889282,
+    1.215439796447754, 1.217397212982178, 1.219319939613342, 1.221296906471252, 1.223244547843933,
+    1.225193500518799, 1.227156400680542, 1.229078769683838, 1.231033563613892, 1.232971906661987,
+    1.234902858734131, 1.236835360527039, 1.238763213157654, 1.240693807601929, 1.24262523651123,
+    1.244545459747314, 1.246495485305786, 1.248386859893799, 1.250310897827148, 1.252229928970337,
+    1.25415563583374, 1.256069660186768, 1.25799572467804, 1.259907722473145, 1.261817932128906,
+    1.263771057128906, 1.265682339668274, 1.267584085464478, 1.26948070526123, 1.271386504173279,
+    1.273284912109375, 1.275175929069519, 1.277068734169006, 1.27895712852478, 1.280843257904053,
+    1.282739758491516, 1.284626960754395, 1.286513566970825, 1.288429141044617, 1.290297031402588,
+    1.292200446128845, 1.294024109840393, 1.295941710472107, 1.297815084457397, 1.299720287322998,
+    1.301571130752563, 1.303437829017639, 1.305312752723694, 1.307170152664185, 1.30904746055603,
+    1.310909032821655, 1.312768220901489, 1.31463086605072, 1.316487550735474, 1.318343877792358,
+    1.320227146148682, 1.322069048881531, 1.32397735118866, 1.325778961181641, 1.327630877494812,
+    1.329485058784485, 1.331322073936462, 1.333166599273682, 1.335010051727295, 1.336914539337158,
+    1.338752746582031, 1.340590715408325, 1.342423319816589, 1.344260096549988, 1.346090078353882,
+    1.347929239273071, 1.349749088287354, 1.351582169532776, 1.353404402732849, 1.355228781700134,
+    1.357049465179443, 1.358875632286072, 1.36069655418396, 1.362511515617371, 1.364334225654602,
+    1.366145968437195, 1.367956638336182, 1.369773626327515, 1.371584057807922, 1.373392105102539,
+    1.375202894210815, 1.377008318901062, 1.378808617591858, 1.380610823631287, 1.382407665252686,
+    1.38422429561615, 1.386039733886719, 1.387836217880249, 1.389618873596191, 1.391423940658569,
+    1.393212795257568, 1.394991278648376, 1.396807789802551, 1.398578643798828, 1.400364279747009,
+    1.402149438858032, 1.403935790061951, 1.405715703964233, 1.407501578330994, 1.409280180931091,
+    1.411057353019714, 1.412830829620361, 1.414604783058167, 1.416383028030396, 1.418160080909729,
+    1.419938445091248, 1.421699404716492, 1.423447847366333, 1.425224661827087, 1.426987409591675,
+    1.428747892379761, 1.430507659912109, 1.432264924049377, 1.43402087688446, 1.435771584510803,
+    1.437532901763916, 1.439289212226868, 1.441038608551025, 1.442787885665894, 1.444536209106445,
+    1.446283578872681, 1.448027491569519, 1.449777722358704, 1.451519250869751, 1.453264236450195,
+    1.45500385761261, 1.456737041473389, 1.458472371101379, 1.460215926170349, 1.461952328681946,
+    1.463688850402832, 1.465427398681641, 1.467153429985046, 1.468887448310852, 1.470611095428467,
+    1.472336649894714, 1.474061846733093, 1.475786805152893, 1.477516889572144, 1.47923731803894,
+    1.480958104133606, 1.482677459716797, 1.484407186508179, 1.486120939254761, 1.487835288047791,
+    1.489547610282898, 1.490256833076477, 1.492972135543823, 1.494680166244507, 1.496388792991638,
+    1.498091340065002, 1.499807953834534, 1.50156557559967, 1.50323486328125, 1.504947066307068,
+    1.506648063659668, 1.508348345756531, 1.510074853897095, 1.511768937110901, 1.513469457626343,
+    1.515161395072937, 1.516851663589478, 1.518539905548096, 1.52022922039032, 1.521914720535278,
+    1.523602843284607, 1.525285601615906, 1.526991128921509, 1.528676152229309, 1.530357480049133,
+    1.532050013542175, 1.533867120742798, 1.535542368888855, 1.537220120429993, 1.538895606994629,
+    1.540570974349976, 1.542275667190552, 1.543949484825134, 1.545620918273926, 1.547309756278992,
+    1.548978328704834, 1.550626516342163, 1.552304863929749, 1.553971648216248, 1.55563497543335,
+    1.55729866027832, 1.558972120285034, 1.560631155967712, 1.562277793884277, 1.563951015472412,
+    1.565609812736511, 1.567264795303345, 1.568920016288757, 1.570571184158325, 1.572220802307129,
+    1.573870420455933, 1.575527191162109, 1.577173590660095, 1.578845024108887, 1.580491423606873,
+    1.582136511802673, 1.583783149719238, 1.585430502891541, 1.587074518203735, 1.588725566864014,
+    1.590368270874023, 1.592011332511902, 1.593640923500061, 1.595277190208435, 1.596921682357788,
+    1.598554015159607, 1.600184082984924, 1.601814031600952, 1.603439450263977, 1.605079889297485,
+    1.606706023216248, 1.608329057693481, 1.60996425151825, 1.611585974693298, 1.613209843635559,
+    1.614829897880554, 1.61644983291626, 1.618071436882019, 1.619686126708984, 1.621300101280212,
+    1.622918009757996, 1.624531626701355, 1.62615966796875, 1.627753376960754, 1.629368901252747,
+    1.630986213684082, 1.632585287094116, 1.634198904037476, 1.635805010795593, 1.637423515319824,
+    1.63907516002655, 1.640630722045898, 1.642231225967407, 1.643833756446838, 1.645431876182556,
+    1.64703381061554, 1.648633360862732, 1.650226950645447, 1.651823878288269, 1.653416991233826,
+    1.655011653900146, 1.656603693962097, 1.658196210861206, 1.659785628318787, 1.661377787590027,
+    1.662971377372742, 1.664554357528687, 1.666142582893372, 1.667724370956421, 1.669309020042419,
+    1.670895934104919, 1.672476649284363, 1.674103379249573, 1.675681591033936, 1.677264332771301,
+    1.678841352462769, 1.680417895317078, 1.68199622631073, 1.683582186698914, 1.685153961181641,
+    1.686733484268188, 1.688305854797363, 1.68988311290741, 1.691448211669922, 1.693015217781067,
+    1.694581985473633, 1.696065187454224, 1.697713971138, 1.699286460876465, 1.700849175453186,
+    1.7024165391922, 1.703977584838867, 1.705540180206299, 1.707097887992859, 1.708656907081604,
+    1.710216522216797, 1.711779832839966, 1.713333368301392, 1.714893102645874, 1.716440677642822,
+    1.717996001243591, 1.719549775123596, 1.720099257469177, 1.722650051116943, 1.724197387695312,
+    1.725746870040894, 1.727293252944946, 1.728845000267029, 1.730465173721313, 1.731966853141785,
+    1.733547687530518, 1.735085010528564, 1.736628890037537, 1.738169193267822, 1.73971152305603,
+    1.741250276565552, 1.742789149284363, 1.744327902793884, 1.745863437652588, 1.747398853302002,
+    1.748936653137207, 1.750468254089355, 1.751999855041504, 1.753538489341736, 1.75506854057312,
+    1.756596565246582, 1.758124470710754, 1.759649991989136, 1.761173129081726, 1.762701034545898,
+    1.764221787452698, 1.765744805335999, 1.767278790473938, 1.768809676170349, 1.770323991775513,
+    1.771840691566467, 1.773364663124084, 1.774877667427063, 1.776394248008728, 1.777908325195312,
+    1.779423117637634, 1.780935168266296, 1.782448887825012, 1.783961534500122, 1.785477519035339,
+    1.7869952917099, 1.788510918617249, 1.790019392967224, 1.7915278673172, 1.793034434318542,
+    1.794542193412781, 1.796042442321777, 1.797549486160278, 1.799052000045776, 1.800550580024719,
+    1.802050948143005, 1.80355441570282, 1.805053949356079, 1.806569814682007, 1.808075547218323,
+    1.809573292732239, 1.811066865921021, 1.812561750411987, 1.814053773880005, 1.815546154975891,
+    1.817036271095276, 1.818524718284607, 1.820013165473938, 1.821502685546875, 1.822990298271179
+];
+
+// 核心模型参数
+const ModelConfig = {
+    years: Array.from({length:141}, (_,i) => 1960 + i), // 1960-2100
+    baseConcentration: 363, // 1960年CO2浓度
+    naturalDecayRate: 0.005,
+    retentionRate: 0.44,
+    params: {
+        developed: { α: 0.021, β: 0.0008, gdp0: 18000 },
+        developing: { α: 0.036, β: 0.0025, gdp0: 800 }
+    },
+    // 温升模型参数（含科学来源）
+    Am: 6.6,        // 非温度反馈系数
+    AT_val: 2.2,    // 温度反馈系数
+    Kb: 5.670367e-8, // 玻尔兹曼常数 (物理学常数)
+    Ts: 288.15      // 地表基准温度 (NASA数据)
+};
+
+// 存储全局数据
+let globalData = null;
+
+// 获取辐射强迫值
+function getForcing(deltaC) {
+    // 确保浓度变化在0-800ppm范围内
+    deltaC = Math.max(0, Math.min(deltaC, 800));
+    
+    // 线性插值
+    const index = Math.floor(deltaC);
+    const fraction = deltaC - index;
+    
+    if (index >= 800) {
+        return forcingData[800];
+    }
+    
+    return forcingData[index] * (1 - fraction) + forcingData[index + 1] * fraction;
+}
+
+// 核心计算函数
+function calculateModels() {
+    const baseEmission = parseFloat(document.getElementById('baseEmission').value);
+    const reduction = parseFloat(document.getElementById('reduction').value);
+    const countryType = document.getElementById('countryType').value;
+    const currentYear = parseInt(document.getElementById('currentYear').value);
+    
+    // 更新当前年份显示
+    document.getElementById('currentYearDisplay').textContent = currentYear;
+    
+    // 排放计算
+    const emissions = {
+        policy: ModelConfig.years.map(t => 
+            baseEmission * Math.pow(1 - reduction/100, t-1960) * Math.pow(1.01, t-1960)),
+        baseline: ModelConfig.years.map(t => 
+            baseEmission * Math.pow(1.01, t-1960)
+        )
+    };
+    
+    // 浓度计算
+    const concentrations = [ModelConfig.baseConcentration];
+    for(let i=1; i<ModelConfig.years.length; i++) {
+        const decay = ModelConfig.naturalDecayRate * (concentrations[i-1] - 280);
+        concentrations.push(concentrations[i-1] + 
+            emissions.policy[i] * ModelConfig.retentionRate/2.12 - decay);
+    }
+    
+    // 温度计算（使用辐射强迫模型）
+    const temperatures = concentrations.map(c => {
+        const deltaC = c - 280; // 相对于工业革命前的浓度变化
+        const forcing = getForcing(deltaC);
+        return (ModelConfig.Am * ModelConfig.AT_val * forcing) / 
+               (4 * ModelConfig.Kb * Math.pow(ModelConfig.Ts, 3));
+    });
+    
+    // 经济计算
+    const economy = {
+        policy: temperatures.map((Δt, i) => 
+            ModelConfig.params[countryType].gdp0 * (1 - 
+            ModelConfig.params[countryType].α * Δt - 
+            ModelConfig.params[countryType].β * Math.pow(emissions.policy[i], 1.5))),
+        baseline: temperatures.map((Δt, i) => 
+            ModelConfig.params[countryType].gdp0 * (1 - 
+            ModelConfig.params[countryType].α * Δt - 
+            ModelConfig.params[countryType].β * Math.pow(emissions.baseline[i], 1.5)))
+    };
+    
+    return { 
+        emissions, 
+        concentrations, 
+        temperatures, 
+        economy, 
+        currentYear,
+        baseEmission,
+        reduction,
+        countryType
+    };
+}
+
+// 图表渲染函数
+function renderCharts() {
+    try {
+        // 隐藏加载提示
+        document.querySelectorAll('.loading').forEach(el => {
+            el.style.display = 'none';
+        });
+        
+        const data = calculateModels();
+        globalData = data; // 保存全局数据
+        
+        // 公共配置
+        const layoutCommon = {
+            xaxis: { 
+                title: '年份', 
+                showline: true, 
+                linecolor: '#bdc3c7',
+                range: [1960, 2100] // 限制X轴范围
+            },
+            yaxis: { 
+                showline: true, 
+                linecolor: '#bdc3c7', 
+                gridcolor: '#ecf0f1',
+                zeroline: false
+            },
+            plot_bgcolor: '#f8f9fa',
+            margin: { t: 50, b: 70, r: 30, l: 70 },
+            hovermode: 'x',
+            hoverdistance: 100,
+            showlegend: true,
+            legend: { 
+                orientation: 'h', 
+                y: -0.2,
+                font: { size: 12 }
+            },
+            font: { family: 'Arial, sans-serif', size: 12 }
+        };
+        
+        // 计算各图表Y轴范围
+        const emissionYRange = [0, Math.max(...data.emissions.policy, ...data.emissions.baseline) * 1.1];
+        const concentrationYRange = [Math.min(...data.concentrations)*0.98, Math.max(...data.concentrations)*1.02];
+        const temperatureYRange = [0, Math.max(...data.temperatures)*1.2];
+        const economyYRange = [0, Math.max(...data.economy.policy, ...data.economy.baseline) * 1.1];
+        
+        // 排放图表
+        Plotly.newPlot('emissionChart', [{
+            x: ModelConfig.years,
+            y: data.emissions.baseline,
+            line: { color: '#95a5a6', dash: 'dot', width: 2 },
+            name: '基准排放',
+            hovertemplate: '%{y:.2f} Gt/yr<extra></extra>'
+        },{
+            x: ModelConfig.years,
+            y: data.emissions.policy,
+            line: { color: '#e74c3c', width: 3 },
+            name: '政策排放',
+            hovertemplate: '%{y:.2f} Gt/yr<extra></extra>'
+        },{
+            x: [data.currentYear, data.currentYear],
+            y: emissionYRange,
+            line: { color: '#2c3e50', dash: 'dash', width: 2 },
+            name: '当前年份',
+            hovertemplate: '当前年份: %{x}<extra></extra>'
+        }], Object.assign({}, layoutCommon, {
+            title: '',
+            yaxis: { title: '排放量 (Gt/yr)', range: emissionYRange }
+        }));
+        
+        // 浓度图表
+        Plotly.newPlot('concentrationChart', [{
+            x: ModelConfig.years,
+            y: data.concentrations,
+            line: { color: '#3498db', width: 3 },
+            name: 'CO₂浓度',
+            hovertemplate: '%{y:.1f} ppm<extra></extra>'
+        },{
+            x: [data.currentYear, data.currentYear],
+            y: concentrationYRange,
+            line: { color: '#2c3e50', dash: 'dash', width: 2 },
+            name: '当前年份',
+            hovertemplate: '当前年份: %{x}<extra></extra>'
+        }], Object.assign({}, layoutCommon, {
+            title: '',
+            yaxis: { title: '浓度 (ppm)', range: concentrationYRange }
+        }));
+        
+        // 温度图表
+        Plotly.newPlot('temperatureChart', [{
+            x: ModelConfig.years,
+            y: data.temperatures,
+            line: { color: '#2ecc71', width: 3 },
+            name: '全球温升',
+            hovertemplate: '%{y:.2f} ℃<extra></extra>'
+        },{
+            x: [data.currentYear, data.currentYear],
+            y: temperatureYRange,
+            line: { color: '#2c3e50', dash: 'dash', width: 2 },
+            name: '当前年份',
+            hovertemplate: '当前年份: %{x}<extra></extra>'
+        }], Object.assign({}, layoutCommon, {
+            title: '',
+            yaxis: { title: '温度变化 (℃)', range: temperatureYRange }
+        }));
+        
+        // 经济图表
+        Plotly.newPlot('economyChart', [{
+            x: ModelConfig.years,
+            y: data.economy.baseline,
+            line: { color: '#9b59b6', dash: 'dot', width: 2 },
+            name: '基准GDP',
+            hovertemplate: '%{y:.0f} 美元<extra></extra>'
+        },{
+            x: ModelConfig.years,
+            y: data.economy.policy,
+            line: { color: '#9b59b6', width: 3 },
+            name: '政策GDP',
+            hovertemplate: '%{y:.0f} 美元<extra></extra>'
+        },{
+            x: [data.currentYear, data.currentYear],
+            y: economyYRange,
+            line: { color: '#2c3e50', dash: 'dash', width: 2 },
+            name: '当前年份',
+            hovertemplate: '当前年份: %{x}<extra></extra>'
+        }], Object.assign({}, layoutCommon, {
+            title: '',
+            yaxis: { title: 'GDP (美元)', range: economyYRange }
+        }));
+    } catch (error) {
+        console.error('图表渲染错误:', error);
+        document.querySelectorAll('.loading').forEach(el => {
+            el.innerHTML = '<div class="error-message">图表渲染错误: ' + error.message + '</div>';
+            el.style.display = 'block';
+        });
+    }
+}
+
+// 显示悬停信息
+function showHoverInfo(event, chartId, title, valueFormatter) {
+    if (!globalData) return;
+    
+    // 获取鼠标位置
+    const rect = event.target.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    // 计算年份（1960-2100共141年）
+    const year = Math.round(1960 + (x / rect.width) * 140);
+    if (year < 1960 || year > 2100) return;
+    
+    const idx = year - 1960;
+    const infoBox = document.getElementById(chartId + 'Hover');
+    
+    // 更新信息框内容
+    infoBox.innerHTML = `
+        <h4>${title} (${year}年)</h4>
+        ${valueFormatter(year, idx)}
+    `;
+    
+    // 定位信息框
+    infoBox.style.left = (x + 20) + 'px';
+    infoBox.style.top = (y - 50) + 'px';
+    infoBox.style.opacity = 1;
+}
+
+// 隐藏悬停信息
+function hideHoverInfo(chartId) {
+    const infoBox = document.getElementById(chartId + 'Hover');
+    infoBox.style.opacity = 0;
+}
+
+// 事件监听
+document.querySelectorAll('input[type="range"], select').forEach(element => {
+    element.addEventListener('input', () => {
+        document.getElementById(element.id + 'Val').textContent = element.value;
+        
+        // 同步输入框和滑块的值
+        if (element.id === 'baseEmission') {
+            document.getElementById('baseEmissionInput').value = element.value;
+        } else if (element.id === 'reduction') {
+            document.getElementById('reductionInput').value = element.value;
+        } else if (element.id === 'currentYear') {
+            // 更新年份输入框
+            document.getElementById('currentYearInput').value = element.value;
+        }
+        
+        renderCharts();
+    });
+});
+
+// 添加输入框事件监听
+document.getElementById('baseEmissionInput').addEventListener('input', function() {
+    let value = parseFloat(this.value);
+    // 限制在最小最大值之间
+    value = Math.max(5, Math.min(20, value));
+    // 保留一位小数
+    value = Math.round(value * 10) / 10;
+    this.value = value;
+    
+    // 更新滑块和显示值
+    document.getElementById('baseEmission').value = value;
+    document.getElementById('baseEmissionVal').textContent = value;
+    
+    renderCharts();
+});
+
+document.getElementById('reductionInput').addEventListener('input', function() {
+    let value = parseFloat(this.value);
+    // 限制在最小最大值之间
+    value = Math.max(0, Math.min(5, value));
+    // 保留一位小数
+    value = Math.round(value * 10) / 10;
+    this.value = value;
+    
+    // 更新滑块和显示值
+    document.getElementById('reduction').value = value;
+    document.getElementById('reductionVal').textContent = value;
+    
+    renderCharts();
+});
+
+// 年份输入框事件监听
+document.getElementById('currentYearInput').addEventListener('input', function() {
+    let value = parseInt(this.value);
+    // 限制在1960-2100之间
+    value = Math.max(1960, Math.min(2100, value));
+    this.value = value;
+
+    // 更新滑块和显示值
+    document.getElementById('currentYear').value = value;
+    document.getElementById('currentYearVal').textContent = value;
+    document.getElementById('currentYearDisplay').textContent = value;
+
+    renderCharts();
+});
+
+// 初始化
+window.addEventListener('load', function() {
+    // 检查Plotly是否加载成功
+    if (typeof Plotly === 'undefined') {
+        document.querySelectorAll('.loading').forEach(el => {
+            el.innerHTML = '<div class="error-message">错误: Plotly图表库加载失败，请检查网络连接</div>';
+        });
+        return;
+    }
+    
+    // 初始渲染图表
+    renderCharts();
+    
+    // 添加悬停事件
+    document.querySelectorAll('.chart-container').forEach(container => {
+        const chartId = container.id;
+        
+        container.addEventListener('mousemove', (event) => {
+            let title, formatter;
+            
+            switch(chartId) {
+                case 'emissionChart':
+                    title = '排放量分析';
+                    formatter = (year, idx) => `
+                        <p>政策排放: <span class="hover-value">${globalData.emissions.policy[idx].toFixed(2)} Gt/yr</span></p>
+                        <p>基准排放: <span class="hover-value">${globalData.emissions.baseline[idx].toFixed(2)} Gt/yr</span></p>
+                        <p>减排率: <span class="hover-value">${globalData.reduction}%/年</span></p>
+                    `;
+                    break;
+                case 'concentrationChart':
+                    title = '大气浓度分析';
+                    formatter = (year, idx) => `
+                        <p>CO₂浓度: <span class="hover-value">${globalData.concentrations[idx].toFixed(1)} ppm</span></p>
+                        <p>较1960年: <span class="hover-value">+${(globalData.concentrations[idx] - 363).toFixed(1)} ppm</span></p>
+                        <p>较工业革命前: <span class="hover-value">+${(globalData.concentrations[idx] - 280).toFixed(1)} ppm</span></p>
+                    `;
+                    break;
+                case 'temperatureChart':
+                    title = '温升分析';
+                    formatter = (year, idx) => {
+                        const deltaC = globalData.concentrations[idx] - 280;
+                        const forcing = getForcing(deltaC);
+                        return `
+                            <p>全球温升: <span class="hover-value">${globalData.temperatures[idx].toFixed(2)} ℃</span></p>
+                            <p>辐射强迫: <span class="hover-value">${forcing.toFixed(4)} W/m²</span></p>
+                            <p>目标安全值: <span class="hover-value">1.5-2.0 ℃</span></p>
+                        `;
+                    };
+                    break;
+                case 'economyChart':
+                    title = '经济影响分析';
+                    formatter = (year, idx) => {
+                        const loss = 100 - (globalData.economy.policy[idx] / globalData.economy.baseline[idx]) * 100;
+                        const tempImpact = globalData.params[globalData.countryType].α * globalData.temperatures[idx] * 100;
+                        const emissionImpact = globalData.params[globalData.countryType].β * Math.pow(globalData.emissions.policy[idx], 1.5) * 100;
+                        
+                        return `
+                            <p>政策GDP: <span class="hover-value">${globalData.economy.policy[idx].toFixed(0)} 美元</span></p>
+                            <p>基准GDP: <span class="hover-value">${globalData.economy.baseline[idx].toFixed(0)} 美元</span></p>
+                            <p>GDP损失: <span class="hover-value">${loss.toFixed(1)}%</span></p>
+                            <p>温升影响: <span class="hover-value">-${tempImpact.toFixed(1)}%</span></p>
+                            <p>排放影响: <span class="hover-value">-${emissionImpact.toFixed(1)}%</span></p>
+                        `;
+                    };
+                    break;
+            }
+            
+            showHoverInfo(event, chartId, title, formatter);
+        });
+        
+        container.addEventListener('mouseleave', () => {
+            hideHoverInfo(chartId);
+        });
+    });
+});
+</script>
+</body>
+</html>
